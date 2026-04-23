@@ -9,6 +9,9 @@ import (
 
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
+
+	"github.com/sergiojaa/soccer-manager-api/internal/users/application"
+	usersHttp "github.com/sergiojaa/soccer-manager-api/internal/users/http"
 )
 
 func main() {
@@ -18,15 +21,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("failed to close database connection: %v", err)
-		}
-	}()
+	defer db.Close()
 
 	r := gin.Default()
 
+	// Health check
 	r.GET("/health", healthHandler(db))
+
+	// Signup wiring
+	signupService := application.NewSignupService(db)
+	userHandler := usersHttp.NewHandler(signupService)
+
+	r.POST("/auth/signup", userHandler.Signup)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
