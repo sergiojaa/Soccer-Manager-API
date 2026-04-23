@@ -11,6 +11,7 @@ import (
 	authApp "github.com/sergiojaa/soccer-manager-api/internal/auth/application"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 	usersApp "github.com/sergiojaa/soccer-manager-api/internal/users/application"
 	usersHttp "github.com/sergiojaa/soccer-manager-api/internal/users/http"
 	usersInfra "github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
@@ -48,6 +49,19 @@ func main() {
 
 	r.POST("/auth/signup", userHandler.Signup)
 	r.POST("/auth/login", userHandler.Login)
+
+	authorized := r.Group("/")
+	authorized.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+
+	authorized.GET("/me", func(c *gin.Context) {
+		userID, _ := c.Get(middleware.ContextUserIDKey)
+		email, _ := c.Get(middleware.ContextEmailKey)
+
+		c.JSON(http.StatusOK, gin.H{
+			"userId": userID,
+			"email":  email,
+		})
+	})
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
