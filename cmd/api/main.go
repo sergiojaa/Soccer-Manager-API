@@ -4,14 +4,16 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
+	authApp "github.com/sergiojaa/soccer-manager-api/internal/auth/application"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
-
-	"github.com/sergiojaa/soccer-manager-api/internal/users/application"
+	usersApp "github.com/sergiojaa/soccer-manager-api/internal/users/application"
 	usersHttp "github.com/sergiojaa/soccer-manager-api/internal/users/http"
+	usersInfra "github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
 )
 
 func main() {
@@ -21,18 +23,31 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("failed to close database connection: %v", err)
+		}
+	}()
 
 	r := gin.Default()
 
-	// Health check
 	r.GET("/health", healthHandler(db))
 
-	// Signup wiring
-	signupService := application.NewSignupService(db)
-	userHandler := usersHttp.NewHandler(signupService)
+	signupService := usersApp.NewSignupService(db)
+
+	expiresIn, err := time.ParseDuration(cfg.JWTExpiresIn)
+	if err != nil {
+		log.Fatalf("failed to parse JWT_EXPIRES_IN: %v", err)
+	}
+
+	userRepo := usersInfra.NewUserRepository(db)
+	tokenService := authApp.NewTokenService(cfg.JWTSecret, expiresIn)
+	loginService := usersApp.NewLoginService(userRepo, tokenService)
+
+	userHandler := usersHttp.NewHandler(signupService, loginService)
 
 	r.POST("/auth/signup", userHandler.Signup)
+	r.POST("/auth/login", userHandler.Login)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)

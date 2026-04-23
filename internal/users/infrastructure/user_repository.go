@@ -9,6 +9,7 @@ import (
 )
 
 var ErrDuplicateEmail = errors.New("duplicate email")
+var ErrUserNotFound = errors.New("user not found")
 
 type UserRepository struct {
 	db *sql.DB
@@ -41,4 +42,37 @@ func (r *UserRepository) Create(
 	}
 
 	return id, nil
+}
+
+type UserAuthRecord struct {
+	ID           int64
+	Email        string
+	PasswordHash string
+}
+
+func (r *UserRepository) FindByEmail(
+	ctx context.Context,
+	email string,
+) (*UserAuthRecord, error) {
+	query := `
+		SELECT id, email, password_hash
+		FROM users
+		WHERE email = $1
+	`
+
+	var user UserAuthRecord
+
+	err := r.db.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
 }
