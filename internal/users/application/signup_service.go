@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"database/sql"
+	"strings"
 
 	playersApp "github.com/sergiojaa/soccer-manager-api/internal/players/application"
 	playersInfra "github.com/sergiojaa/soccer-manager-api/internal/players/infrastructure"
@@ -32,11 +33,24 @@ func (s *SignupService) Execute(
 	email string,
 	password string,
 ) (int64, error) {
+	email = strings.TrimSpace(email)
+	password = strings.TrimSpace(password)
+
+	if !isValidEmail(email) {
+		return 0, ErrInvalidEmail
+	}
+
+	if len(password) < 6 {
+		return 0, ErrInvalidPassword
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -45,6 +59,9 @@ func (s *SignupService) Execute(
 
 	userID, err := s.userRepo.Create(ctx, tx, email, string(hash))
 	if err != nil {
+		if err == infrastructure.ErrDuplicateEmail {
+			return 0, ErrEmailAlreadyUsed
+		}
 		return 0, err
 	}
 
@@ -64,4 +81,8 @@ func (s *SignupService) Execute(
 	}
 
 	return userID, nil
+}
+
+func isValidEmail(email string) bool {
+	return strings.Contains(email, "@") && len(email) >= 3
 }
