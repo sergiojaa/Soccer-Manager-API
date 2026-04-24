@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"strings"
 
-	playersApp "github.com/sergiojaa/soccer-manager-api/internal/players/application"
+	playersApplication "github.com/sergiojaa/soccer-manager-api/internal/players/application"
 	playersInfra "github.com/sergiojaa/soccer-manager-api/internal/players/infrastructure"
 	teamInfrastructure "github.com/sergiojaa/soccer-manager-api/internal/teams/infrastructure"
 	"github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
@@ -70,7 +70,7 @@ func (s *SignupService) Execute(
 		return 0, err
 	}
 
-	players := playersApp.GeneratePlayers(teamID)
+	players := playersApplication.GeneratePlayers(teamID)
 
 	if err := s.playerRepo.CreateBatch(ctx, tx, players); err != nil {
 		return 0, err

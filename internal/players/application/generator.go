@@ -3,16 +3,9 @@ package application
 import (
 	"math/rand"
 	"time"
-)
 
-type PlayerInput struct {
-	TeamID    int64
-	FirstName string
-	LastName  string
-	Country   string
-	Age       int
-	Position  string
-}
+	"github.com/sergiojaa/soccer-manager-api/internal/players/domain"
+)
 
 const (
 	GKCount  = 3
@@ -32,14 +25,14 @@ var firstNames = []string{"John", "Alex", "Mike", "Leo", "David"}
 var lastNames = []string{"Smith", "Brown", "Taylor", "Wilson", "Johnson"}
 var countries = []string{"England", "Spain", "Germany", "France", "Italy"}
 
-func GeneratePlayers(teamID int64) []PlayerInput {
+func GeneratePlayers(teamID int64) []domain.PlayerInput {
 	rand.Seed(time.Now().UnixNano())
 
-	var players []PlayerInput
+	var players []domain.PlayerInput
 
 	addPlayers := func(count int, position string) {
 		for i := 0; i < count; i++ {
-			player := PlayerInput{
+			player := domain.PlayerInput{
 				TeamID:    teamID,
 				FirstName: randomFrom(firstNames),
 				LastName:  randomFrom(lastNames),

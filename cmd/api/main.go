@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 
 	authApp "github.com/sergiojaa/soccer-manager-api/internal/auth/application"
+	playersApp "github.com/sergiojaa/soccer-manager-api/internal/players/application"
+	playersHttp "github.com/sergiojaa/soccer-manager-api/internal/players/http"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
@@ -67,11 +69,14 @@ func main() {
 
 	getTeamService := teamsApp.NewGetTeamService(db)
 	updateTeamService := teamsApp.NewUpdateTeamService(db)
+	updatePlayerService := playersApp.NewUpdatePlayerService(db)
 
 	teamHandler := teamsHttp.NewHandler(getTeamService, updateTeamService)
+	playerHandler := playersHttp.NewHandler(updatePlayerService)
 
 	authorized.GET("/team", teamHandler.GetMyTeam)
 	authorized.PATCH("/team", teamHandler.UpdateMyTeam)
+	authorized.PATCH("/players/:id", playerHandler.UpdatePlayer)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
