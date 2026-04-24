@@ -66,9 +66,12 @@ func main() {
 	})
 
 	getTeamService := teamsApp.NewGetTeamService(db)
-	teamHandler := teamsHttp.NewHandler(getTeamService)
+	updateTeamService := teamsApp.NewUpdateTeamService(db)
+
+	teamHandler := teamsHttp.NewHandler(getTeamService, updateTeamService)
 
 	authorized.GET("/team", teamHandler.GetMyTeam)
+	authorized.PATCH("/team", teamHandler.UpdateMyTeam)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)

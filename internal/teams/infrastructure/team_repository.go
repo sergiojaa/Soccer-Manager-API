@@ -104,3 +104,34 @@ func (r *TeamRepository) FindByUserID(
 
 	return &team, nil
 }
+
+func (r *TeamRepository) UpdateByUserID(
+	ctx context.Context,
+	userID int64,
+	name string,
+	country string,
+) error {
+	query := `
+		UPDATE teams
+		SET name = $1,
+		    country = $2,
+		    updated_at = NOW()
+		WHERE user_id = $3
+	`
+
+	result, err := r.db.ExecContext(ctx, query, name, country, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
