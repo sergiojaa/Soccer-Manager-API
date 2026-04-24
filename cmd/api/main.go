@@ -16,6 +16,8 @@ import (
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 	teamsApp "github.com/sergiojaa/soccer-manager-api/internal/teams/application"
 	teamsHttp "github.com/sergiojaa/soccer-manager-api/internal/teams/http"
+	transfersApp "github.com/sergiojaa/soccer-manager-api/internal/transfers/application"
+	transfersHttp "github.com/sergiojaa/soccer-manager-api/internal/transfers/http"
 	usersApp "github.com/sergiojaa/soccer-manager-api/internal/users/application"
 	usersHttp "github.com/sergiojaa/soccer-manager-api/internal/users/http"
 	usersInfra "github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
@@ -74,9 +76,14 @@ func main() {
 	teamHandler := teamsHttp.NewHandler(getTeamService, updateTeamService)
 	playerHandler := playersHttp.NewHandler(updatePlayerService)
 
+	listPlayerService := transfersApp.NewListPlayerService(db)
+	transferHandler := transfersHttp.NewHandler(listPlayerService)
+
 	authorized.GET("/team", teamHandler.GetMyTeam)
 	authorized.PATCH("/team", teamHandler.UpdateMyTeam)
 	authorized.PATCH("/players/:id", playerHandler.UpdatePlayer)
+
+	authorized.POST("/transfers/list", transferHandler.ListPlayer)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
