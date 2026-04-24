@@ -78,13 +78,15 @@ func main() {
 
 	listPlayerService := transfersApp.NewListPlayerService(db)
 	listMarketService := transfersApp.NewListMarketService(db)
-	transferHandler := transfersHttp.NewHandler(listPlayerService, listMarketService)
+	buyPlayerService := transfersApp.NewBuyPlayerService(db)
+
+	transferHandler := transfersHttp.NewHandler(listPlayerService, listMarketService, buyPlayerService)
 
 	authorized.GET("/team", teamHandler.GetMyTeam)
 	authorized.GET("/transfers", transferHandler.ListMarket)
 	authorized.PATCH("/team", teamHandler.UpdateMyTeam)
 	authorized.PATCH("/players/:id", playerHandler.UpdatePlayer)
-
+	authorized.POST("/transfers/:id/buy", transferHandler.BuyPlayer)
 	authorized.POST("/transfers/list", transferHandler.ListPlayer)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
