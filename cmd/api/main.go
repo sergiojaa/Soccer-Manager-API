@@ -12,6 +12,8 @@ import (
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
+	teamsApp "github.com/sergiojaa/soccer-manager-api/internal/teams/application"
+	teamsHttp "github.com/sergiojaa/soccer-manager-api/internal/teams/http"
 	usersApp "github.com/sergiojaa/soccer-manager-api/internal/users/application"
 	usersHttp "github.com/sergiojaa/soccer-manager-api/internal/users/http"
 	usersInfra "github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
@@ -62,6 +64,11 @@ func main() {
 			"email":  email,
 		})
 	})
+
+	getTeamService := teamsApp.NewGetTeamService(db)
+	teamHandler := teamsHttp.NewHandler(getTeamService)
+
+	authorized.GET("/team", teamHandler.GetMyTeam)
 
 	if err := r.Run(":" + cfg.AppPort); err != nil {
 		log.Fatalf("failed to run server: %v", err)
