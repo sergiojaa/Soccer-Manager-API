@@ -77,9 +77,11 @@ func main() {
 	playerHandler := playersHttp.NewHandler(updatePlayerService)
 
 	listPlayerService := transfersApp.NewListPlayerService(db)
-	transferHandler := transfersHttp.NewHandler(listPlayerService)
+	listMarketService := transfersApp.NewListMarketService(db)
+	transferHandler := transfersHttp.NewHandler(listPlayerService, listMarketService)
 
 	authorized.GET("/team", teamHandler.GetMyTeam)
+	authorized.GET("/transfers", transferHandler.ListMarket)
 	authorized.PATCH("/team", teamHandler.UpdateMyTeam)
 	authorized.PATCH("/players/:id", playerHandler.UpdatePlayer)
 

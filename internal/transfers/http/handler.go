@@ -12,11 +12,16 @@ import (
 
 type Handler struct {
 	listPlayerService *application.ListPlayerService
+	listMarketService *application.ListMarketService
 }
 
-func NewHandler(listPlayerService *application.ListPlayerService) *Handler {
+func NewHandler(
+	listPlayerService *application.ListPlayerService,
+	listMarketService *application.ListMarketService,
+) *Handler {
 	return &Handler{
 		listPlayerService: listPlayerService,
+		listMarketService: listMarketService,
 	}
 }
 
@@ -91,5 +96,19 @@ func (h *Handler) ListPlayer(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "player listed for transfer successfully",
+	})
+}
+
+func (h *Handler) ListMarket(c *gin.Context) {
+	listings, err := h.listMarketService.Execute(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"items": listings,
 	})
 }

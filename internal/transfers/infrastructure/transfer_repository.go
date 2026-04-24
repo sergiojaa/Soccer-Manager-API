@@ -44,3 +44,63 @@ func (r *TransferRepository) ListOwnedPlayer(
 
 	return nil
 }
+
+func (r *TransferRepository) FindActiveListings(
+	ctx context.Context,
+) ([]MarketListingView, error) {
+	query := `
+		SELECT
+			tl.id,
+			p.id,
+			p.first_name,
+			p.last_name,
+			p.country,
+			p.age,
+			p.position,
+			p.market_value,
+			tl.asking_price,
+			t.id,
+			t.name
+		FROM transfer_listings tl
+		JOIN players p ON p.id = tl.player_id
+		JOIN teams t ON t.id = tl.seller_team_id
+		WHERE tl.status = 'ACTIVE'
+		ORDER BY tl.created_at DESC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	listings := make([]MarketListingView, 0)
+
+	for rows.Next() {
+		var listing MarketListingView
+
+		if err := rows.Scan(
+			&listing.ID,
+			&listing.PlayerID,
+			&listing.FirstName,
+			&listing.LastName,
+			&listing.Country,
+			&listing.Age,
+			&listing.Position,
+			&listing.MarketValue,
+			&listing.AskingPrice,
+			&listing.SellerTeamID,
+			&listing.SellerTeam,
+		); err != nil {
+			return nil, err
+		}
+
+		listings = append(listings, listing)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return listings, nil
+}
