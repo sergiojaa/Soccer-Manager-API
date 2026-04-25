@@ -9,6 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	authApp "github.com/sergiojaa/soccer-manager-api/internal/auth/application"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/httpx"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
 )
 
@@ -22,27 +23,21 @@ func AuthMiddleware(secret string, localizer *i18n.Localizer) gin.HandlerFunc {
 		locale := localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": localizer.Msg(locale, "error.authorization_required"),
-			})
+			httpx.Error(c, http.StatusUnauthorized, "AUTHORIZATION_REQUIRED", localizer.Msg(locale, "error.authorization_required"))
 			c.Abort()
 			return
 		}
 
 		const bearerPrefix = "Bearer "
 		if !strings.HasPrefix(authHeader, bearerPrefix) {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": localizer.Msg(locale, "error.authorization_bearer_required"),
-			})
+			httpx.Error(c, http.StatusUnauthorized, "AUTHORIZATION_BEARER_REQUIRED", localizer.Msg(locale, "error.authorization_bearer_required"))
 			c.Abort()
 			return
 		}
 
 		tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, bearerPrefix))
 		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": localizer.Msg(locale, "error.token_required"),
-			})
+			httpx.Error(c, http.StatusUnauthorized, "TOKEN_REQUIRED", localizer.Msg(locale, "error.token_required"))
 			c.Abort()
 			return
 		}
@@ -56,9 +51,7 @@ func AuthMiddleware(secret string, localizer *i18n.Localizer) gin.HandlerFunc {
 			return []byte(secret), nil
 		})
 		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": localizer.Msg(locale, "error.token_invalid_or_expired"),
-			})
+			httpx.Error(c, http.StatusUnauthorized, "TOKEN_INVALID_OR_EXPIRED", localizer.Msg(locale, "error.token_invalid_or_expired"))
 			c.Abort()
 			return
 		}

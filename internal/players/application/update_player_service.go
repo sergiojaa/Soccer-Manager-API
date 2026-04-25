@@ -17,12 +17,27 @@ var (
 )
 
 type UpdatePlayerService struct {
-	playerRepo *infrastructure.PlayerRepository
+	playerRepo OwnedPlayerUpdaterRepository
+}
+
+type OwnedPlayerUpdaterRepository interface {
+	UpdateOwnedPlayer(
+		ctx context.Context,
+		userID int64,
+		playerID int64,
+		firstName string,
+		lastName string,
+		country string,
+	) error
 }
 
 func NewUpdatePlayerService(db *sql.DB) *UpdatePlayerService {
+	return NewUpdatePlayerServiceWithRepository(infrastructure.NewPlayerRepository(db))
+}
+
+func NewUpdatePlayerServiceWithRepository(playerRepo OwnedPlayerUpdaterRepository) *UpdatePlayerService {
 	return &UpdatePlayerService{
-		playerRepo: infrastructure.NewPlayerRepository(db),
+		playerRepo: playerRepo,
 	}
 }
 

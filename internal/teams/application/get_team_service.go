@@ -11,12 +11,20 @@ import (
 var ErrTeamNotFound = errors.New("team not found")
 
 type GetTeamService struct {
-	teamRepo *infrastructure.TeamRepository
+	teamRepo TeamReaderRepository
+}
+
+type TeamReaderRepository interface {
+	FindByUserID(ctx context.Context, userID int64) (*infrastructure.TeamView, error)
 }
 
 func NewGetTeamService(db *sql.DB) *GetTeamService {
+	return NewGetTeamServiceWithRepository(infrastructure.NewTeamRepository(db))
+}
+
+func NewGetTeamServiceWithRepository(teamRepo TeamReaderRepository) *GetTeamService {
 	return &GetTeamService{
-		teamRepo: infrastructure.NewTeamRepository(db),
+		teamRepo: teamRepo,
 	}
 }
 

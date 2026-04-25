@@ -16,12 +16,20 @@ var (
 )
 
 type ListPlayerService struct {
-	transferRepo *infrastructure.TransferRepository
+	transferRepo TransferListerRepository
+}
+
+type TransferListerRepository interface {
+	ListOwnedPlayer(ctx context.Context, userID int64, playerID int64, askingPrice int64) error
 }
 
 func NewListPlayerService(db *sql.DB) *ListPlayerService {
+	return NewListPlayerServiceWithRepository(infrastructure.NewTransferRepository(db))
+}
+
+func NewListPlayerServiceWithRepository(transferRepo TransferListerRepository) *ListPlayerService {
 	return &ListPlayerService{
-		transferRepo: infrastructure.NewTransferRepository(db),
+		transferRepo: transferRepo,
 	}
 }
 

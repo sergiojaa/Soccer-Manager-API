@@ -13,6 +13,7 @@ import (
 	playersHttp "github.com/sergiojaa/soccer-manager-api/internal/players/http"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/httpx"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 	teamsApp "github.com/sergiojaa/soccer-manager-api/internal/teams/application"
@@ -69,10 +70,10 @@ func main() {
 		userID, _ := c.Get(middleware.ContextUserIDKey)
 		email, _ := c.Get(middleware.ContextEmailKey)
 
-		c.JSON(http.StatusOK, gin.H{
+		httpx.Success(c, http.StatusOK, gin.H{
 			"userId": userID,
 			"email":  email,
-		})
+		}, "")
 	})
 
 	getTeamService := teamsApp.NewGetTeamService(db)
@@ -104,17 +105,13 @@ func healthHandler(db *sql.DB, localizer *i18n.Localizer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		locale := localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 		if err := db.Ping(); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":   "degraded",
-				"database": "disconnected",
-				"error":    localizer.Msg(locale, "error.internal_server"),
-			})
+			httpx.Error(c, http.StatusServiceUnavailable, "INTERNAL_SERVER_ERROR", localizer.Msg(locale, "error.internal_server"))
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{
+		httpx.Success(c, http.StatusOK, gin.H{
 			"status":   "ok",
 			"database": "connected",
-		})
+		}, "")
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	playersApplication "github.com/sergiojaa/soccer-manager-api/internal/players/application"
+	playersDomain "github.com/sergiojaa/soccer-manager-api/internal/players/domain"
 	playersInfra "github.com/sergiojaa/soccer-manager-api/internal/players/infrastructure"
 	teamInfrastructure "github.com/sergiojaa/soccer-manager-api/internal/teams/infrastructure"
 	"github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
@@ -14,17 +15,43 @@ import (
 
 type SignupService struct {
 	db         *sql.DB
-	userRepo   *infrastructure.UserRepository
-	teamRepo   *teamInfrastructure.TeamRepository
-	playerRepo *playersInfra.PlayerRepository
+	userRepo   UserCreatorRepository
+	teamRepo   TeamCreatorRepository
+	playerRepo PlayerBatchCreatorRepository
+}
+
+type UserCreatorRepository interface {
+	Create(ctx context.Context, tx *sql.Tx, email string, passwordHash string) (int64, error)
+}
+
+type TeamCreatorRepository interface {
+	Create(ctx context.Context, tx *sql.Tx, userID int64, name string, country string) (int64, error)
+}
+
+type PlayerBatchCreatorRepository interface {
+	CreateBatch(ctx context.Context, tx *sql.Tx, players []playersDomain.PlayerInput) error
 }
 
 func NewSignupService(db *sql.DB) *SignupService {
+	return NewSignupServiceWithRepositories(
+		db,
+		infrastructure.NewUserRepository(db),
+		teamInfrastructure.NewTeamRepository(db),
+		playersInfra.NewPlayerRepository(db),
+	)
+}
+
+func NewSignupServiceWithRepositories(
+	db *sql.DB,
+	userRepo UserCreatorRepository,
+	teamRepo TeamCreatorRepository,
+	playerRepo PlayerBatchCreatorRepository,
+) *SignupService {
 	return &SignupService{
 		db:         db,
-		userRepo:   infrastructure.NewUserRepository(db),
-		teamRepo:   teamInfrastructure.NewTeamRepository(db),
-		playerRepo: playersInfra.NewPlayerRepository(db),
+		userRepo:   userRepo,
+		teamRepo:   teamRepo,
+		playerRepo: playerRepo,
 	}
 }
 

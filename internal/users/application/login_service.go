@@ -4,19 +4,26 @@ import (
 	"context"
 	"strings"
 
-	authApp "github.com/sergiojaa/soccer-manager-api/internal/auth/application"
 	"github.com/sergiojaa/soccer-manager-api/internal/users/infrastructure"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type LoginService struct {
-	userRepo     *infrastructure.UserRepository
-	tokenService *authApp.TokenService
+	userRepo     UserAuthRepository
+	tokenService AccessTokenGenerator
+}
+
+type UserAuthRepository interface {
+	FindByEmail(ctx context.Context, email string) (*infrastructure.UserAuthRecord, error)
+}
+
+type AccessTokenGenerator interface {
+	Generate(userID int64, email string) (string, error)
 }
 
 func NewLoginService(
-	userRepo *infrastructure.UserRepository,
-	tokenService *authApp.TokenService,
+	userRepo UserAuthRepository,
+	tokenService AccessTokenGenerator,
 ) *LoginService {
 	return &LoginService{
 		userRepo:     userRepo,

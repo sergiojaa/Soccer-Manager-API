@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/httpx"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/validation"
 	"github.com/sergiojaa/soccer-manager-api/internal/users/application"
 )
 
@@ -28,23 +30,21 @@ func NewHandler(
 }
 
 type signupRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=6"`
 }
 
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }
 
 func (h *Handler) Signup(c *gin.Context) {
 	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	var req signupRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": h.localizer.Msg(locale, "error.invalid_request_body"),
-		})
+	if err := validation.BindJSON(c, &req); err != nil {
+		httpx.Error(c, http.StatusBadRequest, "INVALID_REQUEST_BODY", h.localizer.Msg(locale, "error.invalid_request_body"))
 		return
 	}
 
@@ -52,35 +52,29 @@ func (h *Handler) Signup(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrInvalidEmail):
-			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.invalid_email")})
+			httpx.Error(c, http.StatusBadRequest, "INVALID_EMAIL", h.localizer.Msg(locale, "error.invalid_email"))
 			return
 		case errors.Is(err, application.ErrInvalidPassword):
-			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.invalid_password")})
+			httpx.Error(c, http.StatusBadRequest, "INVALID_PASSWORD", h.localizer.Msg(locale, "error.invalid_password"))
 			return
 		case errors.Is(err, application.ErrEmailAlreadyUsed):
-			c.JSON(http.StatusConflict, gin.H{"error": h.localizer.Msg(locale, "error.email_already_exists")})
+			httpx.Error(c, http.StatusConflict, "EMAIL_ALREADY_EXISTS", h.localizer.Msg(locale, "error.email_already_exists"))
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": h.localizer.Msg(locale, "error.internal_server"),
-			})
+			httpx.Error(c, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", h.localizer.Msg(locale, "error.internal_server"))
 			return
 		}
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"userId": userID,
-	})
+	httpx.Success(c, http.StatusCreated, gin.H{"userId": userID}, "")
 }
 
 func (h *Handler) Login(c *gin.Context) {
 	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	var req loginRequest
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": h.localizer.Msg(locale, "error.invalid_request_body"),
-		})
+	if err := validation.BindJSON(c, &req); err != nil {
+		httpx.Error(c, http.StatusBadRequest, "INVALID_REQUEST_BODY", h.localizer.Msg(locale, "error.invalid_request_body"))
 		return
 	}
 
@@ -88,15 +82,13 @@ func (h *Handler) Login(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrInvalidCredentials):
-			c.JSON(http.StatusUnauthorized, gin.H{"error": h.localizer.Msg(locale, "error.invalid_credentials")})
+			httpx.Error(c, http.StatusUnauthorized, "INVALID_CREDENTIALS", h.localizer.Msg(locale, "error.invalid_credentials"))
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": h.localizer.Msg(locale, "error.internal_server")})
+			httpx.Error(c, http.StatusInternalServerError, "INTERNAL_SERVER_ERROR", h.localizer.Msg(locale, "error.internal_server"))
 			return
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"accessToken": token,
-	})
+	httpx.Success(c, http.StatusOK, gin.H{"accessToken": token}, "")
 }

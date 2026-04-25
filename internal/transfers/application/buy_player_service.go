@@ -18,13 +18,65 @@ var (
 
 type BuyPlayerService struct {
 	db           *sql.DB
-	transferRepo *infrastructure.TransferRepository
+	transferRepo TransferBuyerRepository
+}
+
+type TransferBuyerRepository interface {
+	FindActiveListingForUpdate(
+		ctx context.Context,
+		tx *sql.Tx,
+		listingID int64,
+	) (*infrastructure.ActiveListingForUpdate, error)
+	FindTeamByUserIDForUpdate(
+		ctx context.Context,
+		tx *sql.Tx,
+		userID int64,
+	) (*infrastructure.TeamForUpdate, error)
+	DecreaseTeamBudget(
+		ctx context.Context,
+		tx *sql.Tx,
+		teamID int64,
+		amount int64,
+	) error
+	IncreaseTeamBudget(
+		ctx context.Context,
+		tx *sql.Tx,
+		teamID int64,
+		amount int64,
+	) error
+	MovePlayerToTeam(
+		ctx context.Context,
+		tx *sql.Tx,
+		playerID int64,
+		newTeamID int64,
+		newMarketValue int64,
+	) error
+	MarkListingSold(
+		ctx context.Context,
+		tx *sql.Tx,
+		listingID int64,
+	) error
+	CreateTransferHistory(
+		ctx context.Context,
+		tx *sql.Tx,
+		listingID int64,
+		playerID int64,
+		sellerTeamID int64,
+		buyerTeamID int64,
+		salePrice int64,
+		oldMarketValue int64,
+		newMarketValue int64,
+	) error
 }
 
 func NewBuyPlayerService(db *sql.DB) *BuyPlayerService {
+	return NewBuyPlayerServiceWithRepository(db, infrastructure.NewTransferRepository(db))
+}
+
+func NewBuyPlayerServiceWithRepository(db *sql.DB, transferRepo TransferBuyerRepository) *BuyPlayerService {
 	return &BuyPlayerService{
 		db:           db,
-		transferRepo: infrastructure.NewTransferRepository(db),
+		transferRepo: transferRepo,
 	}
 }
 

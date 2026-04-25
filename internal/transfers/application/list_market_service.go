@@ -8,12 +8,20 @@ import (
 )
 
 type ListMarketService struct {
-	transferRepo *infrastructure.TransferRepository
+	transferRepo MarketReaderRepository
+}
+
+type MarketReaderRepository interface {
+	FindActiveListings(ctx context.Context) ([]infrastructure.MarketListingView, error)
 }
 
 func NewListMarketService(db *sql.DB) *ListMarketService {
+	return NewListMarketServiceWithRepository(infrastructure.NewTransferRepository(db))
+}
+
+func NewListMarketServiceWithRepository(transferRepo MarketReaderRepository) *ListMarketService {
 	return &ListMarketService{
-		transferRepo: infrastructure.NewTransferRepository(db),
+		transferRepo: transferRepo,
 	}
 }
 

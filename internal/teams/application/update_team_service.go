@@ -15,12 +15,20 @@ var (
 )
 
 type UpdateTeamService struct {
-	teamRepo *infrastructure.TeamRepository
+	teamRepo TeamUpdaterRepository
+}
+
+type TeamUpdaterRepository interface {
+	UpdateByUserID(ctx context.Context, userID int64, name string, country string) error
 }
 
 func NewUpdateTeamService(db *sql.DB) *UpdateTeamService {
+	return NewUpdateTeamServiceWithRepository(infrastructure.NewTeamRepository(db))
+}
+
+func NewUpdateTeamServiceWithRepository(teamRepo TeamUpdaterRepository) *UpdateTeamService {
 	return &UpdateTeamService{
-		teamRepo: infrastructure.NewTeamRepository(db),
+		teamRepo: teamRepo,
 	}
 }
 
