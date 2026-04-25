@@ -5,13 +5,68 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45895422"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "playerId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "transferId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
   "item": [
     {
       "name": "Soccer Manager Local",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{token}}",
+            "type": "string"
+          }
+        ]
+      },
       "item": [
         {
-          "name": "Signup",
+          "name": "Health Check",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign Up",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [],
             "body": {
@@ -24,15 +79,13 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/auth/signup.",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/auth/signup",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "auth",
-                "signup."
+                "signup"
               ]
             }
           },
@@ -40,16 +93,23 @@
         },
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.collectionVariables.set('token', json.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzLCJlbWFpbCI6InVzZXIxQGV4YW1wbGUuY29tIiwiZXhwIjoxNzc3MTkxNjcwLCJuYmYiOjE3NzcxMDUyNzAsImlhdCI6MTc3NzEwNTI3MH0.PuSo2poVpKXexxgMQ7AyR13DUyQsTBgUN8GM_1B9RzI",
-                  "type": "string"
-                }
-              ]
+              "type": "noauth"
             },
             "method": "POST",
             "header": [],
@@ -63,12 +123,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/auth/login",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/auth/login",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "auth",
                 "login"
@@ -78,10 +136,36 @@
           "response": []
         },
         {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get Team",
           "request": {
             "method": "GET",
-            "header": []
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/team",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "team"
+              ]
+            }
           },
           "response": []
         },
@@ -90,6 +174,15 @@
           "request": {
             "method": "PATCH",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tbilisi Stars\",\n  \"country\": \"Georgia\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{baseUrl}}/team",
               "host": [
@@ -105,16 +198,6 @@
         {
           "name": "Update Player",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzLCJlbWFpbCI6InVzZXIxQGV4YW1wbGUuY29tIiwiZXhwIjoxNzc3MTk1MjE4LCJuYmYiOjE3NzcxMDg4MTgsImlhdCI6MTc3NzEwODgxOH0.ol6ZkJqMFINCc6B4gzA2leNtDt-itTdBIweHHunj8Zw",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "PATCH",
             "header": [],
             "body": {
@@ -127,38 +210,26 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/players/141",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/players/{{playerId}}",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "players",
-                "141"
+                "{{playerId}}"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "List Player",
+          "name": "List Player For Transfer",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzLCJlbWFpbCI6InVzZXIxQGV4YW1wbGUuY29tIiwiZXhwIjoxNzc3MTk1MjE4LCJuYmYiOjE3NzcxMDg4MTgsImlhdCI6MTc3NzEwODgxOH0.ol6ZkJqMFINCc6B4gzA2leNtDt-itTdBIweHHunj8Zw",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "POST",
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"playerId\": 141,\n  \"askingPrice\": 2500000\n}",
+              "raw": "{\n  \"playerId\": {{playerId}},\n  \"askingPrice\": 2500000\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -166,12 +237,10 @@
               }
             },
             "url": {
-              "raw": "http://localhost:8080/transfers/list",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/transfers/list",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
                 "transfers",
                 "list"
@@ -181,57 +250,38 @@
           "response": []
         },
         {
-          "name": "Get Transfers",
+          "name": "Get Transfer Market",
           "request": {
             "method": "GET",
-            "header": []
-          },
-          "response": []
-        },
-        {
-          "name": "Buy Player",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEzLCJlbWFpbCI6InVzZXIxQGV4YW1wbGUuY29tIiwiZXhwIjoxNzc3MTk1MjE4LCJuYmYiOjE3NzcxMDg4MTgsImlhdCI6MTc3NzEwODgxOH0.ol6ZkJqMFINCc6B4gzA2leNtDt-itTdBIweHHunj8Zw",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
             "header": [],
             "url": {
-              "raw": "http://localhost:8080/transfers/1/buy",
-              "protocol": "http",
+              "raw": "{{baseUrl}}/transfers",
               "host": [
-                "localhost"
+                "{{baseUrl}}"
               ],
-              "port": "8080",
               "path": [
-                "transfers",
-                "1",
-                "buy"
+                "transfers"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "Health Check",
+          "name": "Buy Player",
           "request": {
-            "method": "GET",
-            "header": []
-          },
-          "response": []
-        },
-        {
-          "name": "Get Me",
-          "request": {
-            "method": "GET",
-            "header": []
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transfers/{{transferId}}/buy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "transfers",
+                "{{transferId}}",
+                "buy"
+              ]
+            }
           },
           "response": []
         }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 	"github.com/sergiojaa/soccer-manager-api/internal/transfers/application"
 )
@@ -15,17 +16,20 @@ type Handler struct {
 	listPlayerService *application.ListPlayerService
 	listMarketService *application.ListMarketService
 	buyPlayerService  *application.BuyPlayerService
+	localizer         *i18n.Localizer
 }
 
 func NewHandler(
 	listPlayerService *application.ListPlayerService,
 	listMarketService *application.ListMarketService,
 	buyPlayerService *application.BuyPlayerService,
+	localizer *i18n.Localizer,
 ) *Handler {
 	return &Handler{
 		listPlayerService: listPlayerService,
 		listMarketService: listMarketService,
 		buyPlayerService:  buyPlayerService,
+		localizer:         localizer,
 	}
 }
 
@@ -35,10 +39,11 @@ type listPlayerRequest struct {
 }
 
 func (h *Handler) ListPlayer(c *gin.Context) {
+	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	userIDValue, exists := c.Get(middleware.ContextUserIDKey)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user context is missing",
+			"error": h.localizer.Msg(locale, "error.user_context_missing"),
 		})
 		return
 	}
@@ -46,7 +51,7 @@ func (h *Handler) ListPlayer(c *gin.Context) {
 	userID, ok := userIDValue.(int64)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid user context",
+			"error": h.localizer.Msg(locale, "error.user_context_invalid"),
 		})
 		return
 	}
@@ -55,14 +60,14 @@ func (h *Handler) ListPlayer(c *gin.Context) {
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid request body",
+			"error": h.localizer.Msg(locale, "error.invalid_request_body"),
 		})
 		return
 	}
 
 	if req.PlayerID <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid player id",
+			"error": h.localizer.Msg(locale, "error.invalid_player_id"),
 		})
 		return
 	}
@@ -77,37 +82,38 @@ func (h *Handler) ListPlayer(c *gin.Context) {
 		switch {
 		case errors.Is(err, application.ErrInvalidAskingPrice):
 			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "asking price must be greater than zero",
+				"error": h.localizer.Msg(locale, "error.invalid_asking_price"),
 			})
 			return
 		case errors.Is(err, application.ErrTransferPlayerNotFoundOrNotOwned):
 			c.JSON(http.StatusNotFound, gin.H{
-				"error": "player not found",
+				"error": h.localizer.Msg(locale, "error.player_not_found"),
 			})
 			return
 		case errors.Is(err, application.ErrPlayerAlreadyListed):
 			c.JSON(http.StatusConflict, gin.H{
-				"error": "player is already listed for transfer",
+				"error": h.localizer.Msg(locale, "error.player_already_listed"),
 			})
 			return
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "internal server error",
+				"error": h.localizer.Msg(locale, "error.internal_server"),
 			})
 			return
 		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "player listed for transfer successfully",
+		"message": h.localizer.Msg(locale, "success.player_listed_for_transfer"),
 	})
 }
 
 func (h *Handler) ListMarket(c *gin.Context) {
+	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	listings, err := h.listMarketService.Execute(c.Request.Context())
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "internal server error",
+			"error": h.localizer.Msg(locale, "error.internal_server"),
 		})
 		return
 	}
@@ -118,21 +124,22 @@ func (h *Handler) ListMarket(c *gin.Context) {
 }
 
 func (h *Handler) BuyPlayer(c *gin.Context) {
+	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	userIDValue, exists := c.Get(middleware.ContextUserIDKey)
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "user context is missing"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": h.localizer.Msg(locale, "error.user_context_missing")})
 		return
 	}
 
 	userID, ok := userIDValue.(int64)
 	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid user context"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": h.localizer.Msg(locale, "error.user_context_invalid")})
 		return
 	}
 
 	listingID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil || listingID <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid transfer listing id"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.invalid_transfer_listing_id")})
 		return
 	}
 
@@ -140,21 +147,21 @@ func (h *Handler) BuyPlayer(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrListingNotFound):
-			c.JSON(http.StatusNotFound, gin.H{"error": "transfer listing not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": h.localizer.Msg(locale, "error.transfer_listing_not_found")})
 			return
 		case errors.Is(err, application.ErrCannotBuyOwnPlayer):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot buy your own player"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.cannot_buy_own_player")})
 			return
 		case errors.Is(err, application.ErrInsufficientBudget):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "insufficient budget"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.insufficient_budget")})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": h.localizer.Msg(locale, "error.internal_server")})
 			return
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "player purchased successfully",
+		"message": h.localizer.Msg(locale, "success.player_purchased"),
 	})
 }

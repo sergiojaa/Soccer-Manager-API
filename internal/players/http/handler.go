@@ -8,11 +8,13 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/sergiojaa/soccer-manager-api/internal/players/application"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 )
 
 type Handler struct {
 	updatePlayerService *application.UpdatePlayerService
+	localizer           *i18n.Localizer
 }
 
 type updatePlayerRequest struct {
@@ -21,17 +23,19 @@ type updatePlayerRequest struct {
 	Country   string `json:"country"`
 }
 
-func NewHandler(updatePlayerService *application.UpdatePlayerService) *Handler {
+func NewHandler(updatePlayerService *application.UpdatePlayerService, localizer *i18n.Localizer) *Handler {
 	return &Handler{
 		updatePlayerService: updatePlayerService,
+		localizer:           localizer,
 	}
 }
 
 func (h *Handler) UpdatePlayer(c *gin.Context) {
+	locale := h.localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 	userIDValue, exists := c.Get(middleware.ContextUserIDKey)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "user context is missing",
+			"error": h.localizer.Msg(locale, "error.user_context_missing"),
 		})
 		return
 	}
@@ -39,7 +43,7 @@ func (h *Handler) UpdatePlayer(c *gin.Context) {
 	userID, ok := userIDValue.(int64)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "invalid user context",
+			"error": h.localizer.Msg(locale, "error.user_context_invalid"),
 		})
 		return
 	}
@@ -47,7 +51,7 @@ func (h *Handler) UpdatePlayer(c *gin.Context) {
 	playerID, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid player id",
+			"error": h.localizer.Msg(locale, "error.invalid_player_id"),
 		})
 		return
 	}
@@ -55,7 +59,7 @@ func (h *Handler) UpdatePlayer(c *gin.Context) {
 	var req updatePlayerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid request body",
+			"error": h.localizer.Msg(locale, "error.invalid_request_body"),
 		})
 		return
 	}
@@ -71,24 +75,24 @@ func (h *Handler) UpdatePlayer(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, application.ErrInvalidPlayerFirstName):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "player first name is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.player_first_name_required")})
 			return
 		case errors.Is(err, application.ErrInvalidPlayerLastName):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "player last name is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.player_last_name_required")})
 			return
 		case errors.Is(err, application.ErrInvalidPlayerCountry):
-			c.JSON(http.StatusBadRequest, gin.H{"error": "player country is required"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": h.localizer.Msg(locale, "error.player_country_required")})
 			return
 		case errors.Is(err, application.ErrPlayerNotFoundOrNotOwned):
-			c.JSON(http.StatusNotFound, gin.H{"error": "player not found"})
+			c.JSON(http.StatusNotFound, gin.H{"error": h.localizer.Msg(locale, "error.player_not_found")})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": h.localizer.Msg(locale, "error.internal_server")})
 			return
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "player updated successfully",
+		"message": h.localizer.Msg(locale, "success.player_updated"),
 	})
 }

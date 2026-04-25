@@ -13,6 +13,7 @@ import (
 	playersHttp "github.com/sergiojaa/soccer-manager-api/internal/players/http"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/config"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/database"
+	"github.com/sergiojaa/soccer-manager-api/internal/shared/i18n"
 	"github.com/sergiojaa/soccer-manager-api/internal/shared/middleware"
 	teamsApp "github.com/sergiojaa/soccer-manager-api/internal/teams/application"
 	teamsHttp "github.com/sergiojaa/soccer-manager-api/internal/teams/http"
@@ -38,7 +39,12 @@ func main() {
 
 	r := gin.Default()
 
-	r.GET("/health", healthHandler(db))
+	localizer, err := i18n.New(cfg.DefaultLocale)
+	if err != nil {
+		log.Fatalf("failed to load locales: %v", err)
+	}
+
+	r.GET("/health", healthHandler(db, localizer))
 
 	signupService := usersApp.NewSignupService(db)
 
@@ -51,13 +57,13 @@ func main() {
 	tokenService := authApp.NewTokenService(cfg.JWTSecret, expiresIn)
 	loginService := usersApp.NewLoginService(userRepo, tokenService)
 
-	userHandler := usersHttp.NewHandler(signupService, loginService)
+	userHandler := usersHttp.NewHandler(signupService, loginService, localizer)
 
 	r.POST("/auth/signup", userHandler.Signup)
 	r.POST("/auth/login", userHandler.Login)
 
 	authorized := r.Group("/")
-	authorized.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	authorized.Use(middleware.AuthMiddleware(cfg.JWTSecret, localizer))
 
 	authorized.GET("/me", func(c *gin.Context) {
 		userID, _ := c.Get(middleware.ContextUserIDKey)
@@ -73,14 +79,14 @@ func main() {
 	updateTeamService := teamsApp.NewUpdateTeamService(db)
 	updatePlayerService := playersApp.NewUpdatePlayerService(db)
 
-	teamHandler := teamsHttp.NewHandler(getTeamService, updateTeamService)
-	playerHandler := playersHttp.NewHandler(updatePlayerService)
+	teamHandler := teamsHttp.NewHandler(getTeamService, updateTeamService, localizer)
+	playerHandler := playersHttp.NewHandler(updatePlayerService, localizer)
 
 	listPlayerService := transfersApp.NewListPlayerService(db)
 	listMarketService := transfersApp.NewListMarketService(db)
 	buyPlayerService := transfersApp.NewBuyPlayerService(db)
 
-	transferHandler := transfersHttp.NewHandler(listPlayerService, listMarketService, buyPlayerService)
+	transferHandler := transfersHttp.NewHandler(listPlayerService, listMarketService, buyPlayerService, localizer)
 
 	authorized.GET("/team", teamHandler.GetMyTeam)
 	authorized.GET("/transfers", transferHandler.ListMarket)
@@ -94,13 +100,14 @@ func main() {
 	}
 }
 
-func healthHandler(db *sql.DB) gin.HandlerFunc {
+func healthHandler(db *sql.DB, localizer *i18n.Localizer) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		locale := localizer.ResolveLocale(c.GetHeader("Accept-Language"))
 		if err := db.Ping(); err != nil {
 			c.JSON(http.StatusServiceUnavailable, gin.H{
 				"status":   "degraded",
 				"database": "disconnected",
-				"error":    err.Error(),
+				"error":    localizer.Msg(locale, "error.internal_server"),
 			})
 			return
 		}
