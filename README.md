@@ -3,13 +3,21 @@
 RESTful API for a fantasy football manager game.  
 Users can sign up, manage one team, edit team/player data, list players on the transfer market, and buy players from other teams.
 
+---
+
 ## Tech Stack
 
-- Go
-- Gin (HTTP framework)
+- Go (Gin)
 - PostgreSQL
-- JWT authentication
-- Docker Compose (local database)
+- JWT Authentication
+- Docker
+- Postman
+
+---
+
+Built with ❤️ in Georgia 🇬🇪  
+Where football is serious business ⚽  
+(and Kvara is a legend 😉)
 
 ## Main Features
 
